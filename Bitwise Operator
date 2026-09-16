@@ -1,0 +1,59 @@
+typedef struct {
+    int key;
+    UT_hash_handle hh;
+} HashItem;
+
+void freeHash(HashItem** set) {
+    HashItem *curr, *tmp;
+    HASH_ITER(hh, *set, curr, tmp) {
+        HASH_DEL(*set, curr);
+        free(curr);
+    }
+}
+
+int subarrayBitwiseORs(int* arr, int arrSize) {
+    HashItem *res = NULL, *prev = NULL;
+    
+    for (int i = 0; i < arrSize; ++i) {
+        HashItem *curr = NULL;
+        HashItem *tmp = NULL;
+        int val = arr[i];
+
+        HashItem *entry = (HashItem*)malloc(sizeof(HashItem));
+        entry->key = val;
+        HASH_ADD_INT(curr, key, entry);
+        
+        HashItem *item;
+        if (prev != NULL) {
+            for (item = prev; item != NULL; item = (HashItem*)(item->hh.next)) {
+                int new_val = item->key | val;
+                HashItem *found = NULL;
+                HASH_FIND_INT(curr, &new_val, found);
+                if (!found) {
+                    entry = (HashItem*)malloc(sizeof(HashItem));
+                    entry->key = new_val;
+                    HASH_ADD_INT(curr, key, entry);
+                }
+            }
+        }
+        
+        for (item = curr; item != NULL; item = (HashItem*)(item->hh.next)) {
+            int key = item->key;
+            HashItem *found = NULL;
+            HASH_FIND_INT(res, &key, found);
+            if (!found) {
+                entry = (HashItem*)malloc(sizeof(HashItem));
+                entry->key = key;
+                HASH_ADD_INT(res, key, entry);
+            }
+        }
+        
+        freeHash(&prev);
+        prev = curr;
+    }
+    
+    int count = HASH_COUNT(res);
+    freeHash(&res);
+    freeHash(&prev);
+    return count;
+}
