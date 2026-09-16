@@ -1,0 +1,11 @@
+int totalHammingDistance(int* nums, int numsSize) {
+    int ans = 0;
+    for (int bit = 0; bit < 31; bit++) {
+        int count1s = 0;
+        for (int i = 0; i < numsSize; i++) {
+            count1s += ((nums[i] >> bit) & 1);
+        }
+        ans += count1s * (numsSize - count1s); //(numsSize - count1s)-This is the count of 0's
+    }
+    return ans;
+}
