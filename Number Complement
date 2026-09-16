@@ -1,0 +1,5 @@
+int findComplement(int num) {
+    int x = ~num, m = 0;
+    for (; num ; m = (m << 1) | 1, num = (unsigned)num >> 1);
+    return x & m;
+}
