@@ -1,0 +1,135 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+#define INF 1e9
+
+typedef struct {
+    int node;
+    int dist;
+} HeapNode;
+
+typedef struct {
+    HeapNode* data;
+    int size;
+    int capacity;
+} MinHeap;
+
+MinHeap* createMinHeap(int capacity) {
+    MinHeap* heap = (MinHeap*)malloc(sizeof(MinHeap));
+    heap->data = (HeapNode*)malloc(capacity * sizeof(HeapNode));
+    heap->size = 0;
+    heap->capacity = capacity;
+    return heap;
+}
+
+void swap(HeapNode* a, HeapNode* b) {
+    HeapNode temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+void push(MinHeap* heap, int node, int dist) {
+    if (heap->size == heap->capacity) return;
+    int i = heap->size++;
+    heap->data[i].node = node;
+    heap->data[i].dist = dist;
+    while (i != 0 && heap->data[i].dist < heap->data[(i - 1) / 2].dist) {
+        swap(&heap->data[i], &heap->data[(i - 1) / 2]);
+        i = (i - 1) / 2;
+    }
+}
+
+HeapNode pop(MinHeap* heap) {
+    HeapNode root = heap->data[0];
+    heap->data[0] = heap->data[--heap->size];
+    int i = 0;
+    while (2 * i + 1 < heap->size) {
+        int left = 2 * i + 1;
+        int right = 2 * i + 2;
+        int smallest = left;
+        if (right < heap->size && heap->data[right].dist < heap->data[left].dist) {
+            smallest = right;
+        }
+        if (heap->data[i].dist <= heap->data[smallest].dist) break;
+        swap(&heap->data[i], &heap->data[smallest]);
+        i = smallest;
+    }
+    return root;
+}
+
+int networkDelayTime(int** times, int timesSize, int* timesColSize, int n, int k) {
+    typedef struct {
+        int to;
+        int weight;
+    } Edge;
+
+    int* deg = (int*)calloc(n + 1, sizeof(int));
+    for (int i = 0; i < timesSize; i++) {
+        deg[times[i][0]]++;
+    }
+
+    int* head = (int*)malloc((n + 2) * sizeof(int));
+    head[1] = 0;
+    for (int i = 1; i <= n; i++) {
+        head[i + 1] = head[i] + deg[i];
+    }
+
+    Edge* edges = (Edge*)malloc(timesSize * sizeof(Edge));
+    int* curr_pos = (int*)malloc((n + 1) * sizeof(int));
+    for (int i = 1; i <= n; i++) {
+        curr_pos[i] = head[i];
+    }
+
+    for (int i = 0; i < timesSize; i++) {
+        int u = times[i][0];
+        int v = times[i][1];
+        int w = times[i][2];
+        edges[curr_pos[u]].to = v;
+        edges[curr_pos[u]].weight = w;
+        curr_pos[u]++;
+    }
+
+    int* dist = (int*)malloc((n + 1) * sizeof(int));
+    for (int i = 1; i <= n; i++) {
+        dist[i] = INF;
+    }
+
+    MinHeap* heap = createMinHeap(timesSize * 2);
+    dist[k] = 0;
+    push(heap, k, 0);
+
+    while (heap->size > 0) {
+        HeapNode curr = pop(heap);
+        int u = curr.node;
+        int d = curr.dist;
+
+        if (d > dist[u]) continue;
+
+        for (int i = head[u]; i < head[u + 1]; i++) {
+            int v = edges[i].to;
+            int w = edges[i].weight;
+            if (dist[u] + w < dist[v]) {
+                dist[v] = dist[u] + w;
+                push(heap, v, dist[v]);
+            }
+        }
+    }
+
+    int max_delay = 0;
+    for (int i = 1; i <= n; i++) {
+        if (dist[i] == INF) {
+            free(deg); free(head); free(edges); free(curr_pos); free(dist);
+            free(heap->data); free(heap);
+            return -1;
+        }
+        if (dist[i] > max_delay) {
+            max_delay = dist[i];
+        }
+    }
+
+    free(deg); free(head); free(edges); free(curr_pos); free(dist);
+    free(heap->data); free(heap);
+
+    return max_delay;
+}
